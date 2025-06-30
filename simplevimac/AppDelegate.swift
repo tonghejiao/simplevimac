@@ -2,7 +2,7 @@
 //  AppDelegate.swift
 //  simplevimac
 //
-//  Created by 童菏蛟 on 2025/6/28.test
+//  Created by 童菏蛟 on 2025/6/28
 //
 
 import Cocoa
