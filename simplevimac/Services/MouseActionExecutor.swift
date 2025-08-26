@@ -11,10 +11,10 @@ import AppKit
 class MouseActionExecutor {
     static let shared = MouseActionExecutor()
     
-    func execute(mouseAction: KeyMapper.KeySpec.MouseAction?) {
+    func execute(mouseAction: KeyMapper.KeySpec.MouseAction?) -> Bool{
         switch mouseAction {
         case .none:
-            break
+            return false
         case .scrollUp:
             SmoothScroller.start(direction: 20)
         case .scrollDown:
@@ -32,6 +32,7 @@ class MouseActionExecutor {
         case .mouseMoveToRightBottom:
             self.mouseMoveToRightBottom()
         }
+        return true
     }
     
     func mouseMoveToLeftTop() {

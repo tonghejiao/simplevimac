@@ -20,15 +20,16 @@ class CommandExecutor {
     ]
     var showMenu = false
     
-    func execute(command: KeyMapper.KeySpec.Command?) {
+    func execute(command: KeyMapper.KeySpec.Command?) -> Bool {
         switch command {
             case .none:
-                break
+                return false
             case .firstInputBox:
                 firstInputBox()
             case .showClickableElements:
                 showClickableElements()
         }
+        return true
     }
     
     func firstInputBox() {

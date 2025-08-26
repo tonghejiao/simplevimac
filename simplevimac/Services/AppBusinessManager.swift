@@ -21,6 +21,8 @@ class AppBusinessManager {
     let gPressInterval: TimeInterval = 0.3
     var isKeyCodeCacheUpdate: Bool = false
     var needClearKeyCodeCache = true
+    
+    var keyDownSet: Set<KeyMapper.KeyCombo> = []
 
     let accessibilityElementManager = AccessibilityElementManager.shared
     let commandExecutor = CommandExecutor.shared
@@ -314,27 +316,42 @@ class AppBusinessManager {
     }
 
     func doActionkeyDown(keyBinding :KeyMapper.KeyBinding) -> Bool{
+        var success = false
         //Simulate the key
         for keyCodeItem in keyBinding.action.keyCode {
             let kDown = CGEvent(keyboardEventSource: self.eventSource, virtualKey: keyCodeItem, keyDown: true)!
             kDown.flags = keyBinding.action.modifiers
             kDown.post(tap: .cghidEventTap)
+            
+            addInKeyDownSet(keyCodeItem, keyBinding.action.modifiers)
+            success = true
         }
         
-        mouseActionExecutor.execute(mouseAction: keyBinding.action.mouse)
+        if mouseActionExecutor.execute(mouseAction: keyBinding.action.mouse) {
+            success = true
+        }
         
-        commandExecutor.execute(command: keyBinding.action.command)
-        return true
+        if commandExecutor.execute(command: keyBinding.action.command) {
+            success = true
+        }
+        return success
     }
     
     func doActionkeyUp(keyBinding :KeyMapper.KeyBinding) -> Bool{
+        var success = false
         //Simulate the key
         for keyCodeItem in keyBinding.action.keyCode {
-            let kUp = CGEvent(keyboardEventSource: self.eventSource, virtualKey: keyCodeItem, keyDown: false)!
-            kUp.flags = keyBinding.action.modifiers
-            kUp.post(tap: .cghidEventTap)
+            let keyCombo = KeyMapper.KeyCombo(keyCode: [keyCodeItem], modifiers: keyBinding.action.modifiers)
+            if keyDownSet.contains(keyCombo) {
+                let kUp = CGEvent(keyboardEventSource: self.eventSource, virtualKey: keyCodeItem, keyDown: false)!
+                kUp.flags = keyBinding.action.modifiers
+                kUp.post(tap: .cghidEventTap)
+                
+                keyDownSet.remove(keyCombo)
+                success = true
+            }
         }
-        return true
+        return success
     }
     
     func handleHintInput(_ input: String, _ clickFiist: Bool = false) {
@@ -385,7 +402,13 @@ class AppBusinessManager {
         self.lastGPressTime = 0
     }
     
-    
+    func addInKeyDownSet(_ keyCode: CGKeyCode, _ modifiers: CGEventFlags){
+        if keyDownSet.count > 1000 {
+            return
+        }
+        keyDownSet.insert(KeyMapper.KeyCombo(keyCode: [keyCode], modifiers: modifiers))
+    }
+        
     func applicationWillTerminate(_ notification: Notification) {
         SmoothScroller.stop()
         if let tap = eventTap {
