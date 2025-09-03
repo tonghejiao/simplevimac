@@ -29,6 +29,8 @@ public struct Constant {
     static let cornerRadius: CGFloat = 4
     
     static let fontSize: CGFloat = 10
+    
+    static let source = CGEventSource(stateID: .combinedSessionState)
 }
 
 enum Mode {

@@ -1,4 +1,4 @@
-//
+// fsadfasd dfadsfa dfadf
 //  CommandEXecutor.swift
 //  simplevimac
 //
@@ -20,14 +20,24 @@ class CommandExecutor {
     ]
     var showMenu = false
     
-    func execute(command: KeyMapper.KeySpec.Command?) -> Bool {
+    func execute(command: KeyMapper.KeySpec.Command?) throws -> Bool {
         switch command {
-            case .none:
-                return false
-            case .firstInputBox:
-                firstInputBox()
-            case .showClickableElements:
-                showClickableElements()
+        case .none:
+            return false
+        case .firstInputBox:
+            firstInputBox()
+        case .showClickableElements:
+            showClickableElements()
+        case .moveCursorToPrevSpace:
+            try moveCursorToPrevSpace()
+        case .moveCursorToNextSpace:
+            try moveCursorToNextSpace()
+        case .selectToPrevSpace:
+            try selectToPrevSpace()
+        case .selectToNextSpace:
+            try selectToNextSpace()
+        case .deleteToPrevSpace:
+            try deleteToPrevSpace()
         }
         return true
     }
@@ -306,5 +316,174 @@ class CommandExecutor {
         }
         
         return results
+    }
+    
+    // 将光标移动到左边最近的空格处（跳过光标左侧连续空格，保留空格，如果没有空格则移动到行首）
+    func moveCursorToPrevSpace() throws {
+        let isFocused = (try? accessibilityElementManager.isTextInputFocused()) ?? false
+        if !isFocused {
+            throw AppError.notMeetPremiseCondition("当前没有文本输入聚焦")
+        }
+        
+        if let focusedElement = try? accessibilityElementManager.getFocusedElem() {
+            var textObj: AnyObject?
+            let result = AXUIElementCopyAttributeValue(focusedElement, kAXValueAttribute as CFString, &textObj)
+            if result == .success, let text = textObj as? String {
+                var rangeObj: AnyObject?
+                let rangeResult = AXUIElementCopyAttributeValue(focusedElement, kAXSelectedTextRangeAttribute as CFString, &rangeObj)
+                if rangeResult == .success, let rangeValue = rangeObj, CFGetTypeID(rangeValue) == AXValueGetTypeID() {
+                    var range = CFRange()
+                    if AXValueGetValue(rangeValue as! AXValue, .cfRange, &range) {
+                        let safeLocation = min(range.location, text.count)
+                        let currentIndex = text.index(text.startIndex, offsetBy: safeLocation)
+                        
+                        // 找到当前行的起始位置
+                        let lineStartIndex = text[..<currentIndex].lastIndex(of: "\n").map { text.index(after: $0) } ?? text.startIndex
+                        
+                        // 跳过光标前方的连续空格
+                        var searchIndex = currentIndex
+                        while searchIndex > lineStartIndex && text[text.index(before: searchIndex)] == " " {
+                            searchIndex = text.index(before: searchIndex)
+                        }
+                        
+                        // 确定删除的起点：空格后的位置或行首
+                        let newIndex = text[lineStartIndex..<searchIndex].lastIndex(of: " ").map { text.index(after: $0) } ?? lineStartIndex
+                        
+                        // 放置光标
+                        let newPos = text.distance(from: text.startIndex, to: newIndex)
+                        var newRange = CFRange(location: newPos, length: 0)
+                        if let newRangeValue = AXValueCreate(.cfRange, &newRange) {
+                            AXUIElementSetAttributeValue(focusedElement, kAXSelectedTextRangeAttribute as CFString, newRangeValue)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 将光标移动到右边最近的空格处（跳过光标右侧连续空格，如果没有空格则移动到行尾）
+    func moveCursorToNextSpace() throws {
+        let isFocused = (try? accessibilityElementManager.isTextInputFocused()) ?? false
+        if !isFocused {
+            throw AppError.notMeetPremiseCondition("当前没有文本输入聚焦")
+        }
+        if let focusedElement = try? accessibilityElementManager.getFocusedElem() {
+            var textObj: AnyObject?
+            let result = AXUIElementCopyAttributeValue(focusedElement, kAXValueAttribute as CFString, &textObj)
+            if result == .success, let text = textObj as? String {
+                var rangeObj: AnyObject?
+                let rangeResult = AXUIElementCopyAttributeValue(focusedElement, kAXSelectedTextRangeAttribute as CFString, &rangeObj)
+                if rangeResult == .success, let rangeValue = rangeObj, CFGetTypeID(rangeValue) == AXValueGetTypeID() {
+                    var range = CFRange()
+                    if AXValueGetValue(rangeValue as! AXValue, .cfRange, &range) {
+                        let safeLocation = min(range.location, text.count)
+                        let currentIndex = text.index(text.startIndex, offsetBy: safeLocation)
+
+                        // 找到当前行的结束位置
+                        let lineEndIndex = text[currentIndex...].firstIndex(of: "\n") ?? text.endIndex
+
+                        // 跳过光标后方的连续空格
+                        var searchIndex = currentIndex
+                        while searchIndex < lineEndIndex && text[searchIndex] == " " {
+                            searchIndex = text.index(after: searchIndex)
+                        }
+
+                        // 确定移动的目标索引：下一个空格或行尾
+                        let newIndex = text[searchIndex..<lineEndIndex].firstIndex(of: " ") ?? lineEndIndex
+
+                        // 放置光标
+                        let newPos = text.distance(from: text.startIndex, to: newIndex)
+                        var newRange = CFRange(location: newPos, length: 0)
+                        if let newRangeValue = AXValueCreate(.cfRange, &newRange) {
+                            AXUIElementSetAttributeValue(focusedElement, kAXSelectedTextRangeAttribute as CFString, newRangeValue)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 选中到左边最近的空格处（光标不移动）
+    func selectToPrevSpace() throws {
+        let isFocused = (try? accessibilityElementManager.isTextInputFocused()) ?? false
+        if !isFocused {
+            throw AppError.notMeetPremiseCondition("当前没有文本输入聚焦")
+        }
+
+        if let focusedElement = try? accessibilityElementManager.getFocusedElem() {
+            var textObj: AnyObject?
+            let result = AXUIElementCopyAttributeValue(focusedElement, kAXValueAttribute as CFString, &textObj)
+            if result == .success, let text = textObj as? String {
+                var rangeObj: AnyObject?
+                let rangeResult = AXUIElementCopyAttributeValue(focusedElement, kAXSelectedTextRangeAttribute as CFString, &rangeObj)
+                if rangeResult == .success, let rangeValue = rangeObj, CFGetTypeID(rangeValue) == AXValueGetTypeID() {
+                    var range = CFRange()
+                    if AXValueGetValue(rangeValue as! AXValue, .cfRange, &range) {
+                        let safeLocation = min(range.location, text.count)
+                        let currentIndex = text.index(text.startIndex, offsetBy: safeLocation)
+                        let lineStartIndex = text[..<currentIndex].lastIndex(of: "\n").map { text.index(after: $0) } ?? text.startIndex
+
+                        var searchIndex = currentIndex
+                        while searchIndex > lineStartIndex && text[text.index(before: searchIndex)] == " " {
+                            searchIndex = text.index(before: searchIndex)
+                        }
+
+                        let targetIndex = text[lineStartIndex..<searchIndex].lastIndex(of: " ").map { text.index(after: $0) } ?? lineStartIndex
+
+                        // 设置选中范围，光标不移动
+                        let selectionLength = -text.distance(from: currentIndex, to: targetIndex)
+                        var newRange = CFRange(location: safeLocation - selectionLength, length: selectionLength + range.length)
+                        if let newRangeValue = AXValueCreate(.cfRange, &newRange) {
+                            AXUIElementSetAttributeValue(focusedElement, kAXSelectedTextRangeAttribute as CFString, newRangeValue)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 选中到右边最近的空格处（光标不移动）
+    func selectToNextSpace() throws {
+        let isFocused = (try? accessibilityElementManager.isTextInputFocused()) ?? false
+        if !isFocused {
+            throw AppError.notMeetPremiseCondition("当前没有文本输入聚焦")
+        }
+
+        if let focusedElement = try? accessibilityElementManager.getFocusedElem() {
+            var textObj: AnyObject?
+            let result = AXUIElementCopyAttributeValue(focusedElement, kAXValueAttribute as CFString, &textObj)
+            if result == .success, let text = textObj as? String {
+                var rangeObj: AnyObject?
+                let rangeResult = AXUIElementCopyAttributeValue(focusedElement, kAXSelectedTextRangeAttribute as CFString, &rangeObj)
+                if rangeResult == .success, let rangeValue = rangeObj, CFGetTypeID(rangeValue) == AXValueGetTypeID() {
+                    var range = CFRange()
+                    if AXValueGetValue(rangeValue as! AXValue, .cfRange, &range) {
+                        let safeLocation = min(range.location + range.length, text.count)
+                        let currentIndex = text.index(text.startIndex, offsetBy: safeLocation)
+                        let lineEndIndex = text[currentIndex...].firstIndex(of: "\n") ?? text.endIndex
+
+                        var searchIndex = currentIndex
+                        while searchIndex < lineEndIndex && text[searchIndex] == " " {
+                            searchIndex = text.index(after: searchIndex)
+                        }
+
+                        let targetIndex = text[searchIndex..<lineEndIndex].firstIndex(of: " ") ?? lineEndIndex
+
+                        // 设置选中范围，光标不移动
+                        let selectionLength = text.distance(from: currentIndex, to: targetIndex) + range.length
+                        var newRange = CFRange(location: min(range.location, text.count), length: selectionLength)
+                        if let newRangeValue = AXValueCreate(.cfRange, &newRange) {
+                            AXUIElementSetAttributeValue(focusedElement, kAXSelectedTextRangeAttribute as CFString, newRangeValue)
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // 删除到左边最近的空格处（保留空格，如果没有空格则删除到行首，范围仅限于当前行）
+    func deleteToPrevSpace() throws {
+        try selectToPrevSpace()
+        KeyboardUtils.sendDelete()
     }
 }

@@ -7,4 +7,5 @@
 
 enum AppError: Error {
     case unexpected(String)
+    case notMeetPremiseCondition(String)
 }

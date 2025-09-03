@@ -30,6 +30,11 @@ class KeyMapper {
         enum Command :String, Codable, CaseIterable {
             case firstInputBox
             case showClickableElements
+            case moveCursorToPrevSpace
+            case moveCursorToNextSpace
+            case selectToPrevSpace
+            case selectToNextSpace
+            case deleteToPrevSpace
         }
 
         enum CodingKeys: String, CodingKey {

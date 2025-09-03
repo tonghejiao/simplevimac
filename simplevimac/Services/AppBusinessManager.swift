@@ -11,7 +11,6 @@ class AppBusinessManager {
     static let shared = AppBusinessManager()
     // 业务依赖
     var eventTap: CFMachPort?
-    var eventSource: CGEventSource? = CGEventSource(stateID: .hidSystemState)
     
     var mode = Mode.normal
 
@@ -177,7 +176,7 @@ class AppBusinessManager {
                             }
                             if windowLevelConfig.iSwitch {
                                 let windowTileKeyBinding = Config.match(trieMap: windowLevelConfig.trieMap, keyCodes: getKeyCodeCache(type: type, keyCode: cgKeyCode), flags: cleanedFlags)
-                                if self.dealTrieSearchResult(type: type, trieSearchResult: windowTileKeyBinding) {
+                                if try self.dealTrieSearchResult(type: type, trieSearchResult: windowTileKeyBinding) {
                                     return nil
                                 }
                             }
@@ -197,7 +196,7 @@ class AppBusinessManager {
                             }
                             if urlLevelConfig.iSwitch {
                                 let windowUrlKeyBinding = Config.match(trieMap: urlLevelConfig.trieMap, keyCodes: getKeyCodeCache(type: type, keyCode: cgKeyCode), flags: cleanedFlags)
-                                if self.dealTrieSearchResult(type: type, trieSearchResult: windowUrlKeyBinding) {
+                                if try self.dealTrieSearchResult(type: type, trieSearchResult: windowUrlKeyBinding) {
                                     return nil
                                 }
                             }
@@ -206,40 +205,40 @@ class AppBusinessManager {
                 
                 if notAppLevelBlacklist {
                     switch appLevelConfig.mode {
-                        case .disable:
-                            break
-                        case .whiteListEffective:
-                            if inWindowLevelConfig {
-                                let appKeyBinding = Config.match(trieMap: appLevelConfig.trieMap, keyCodes: getKeyCodeCache(type: type, keyCode: cgKeyCode), flags: cleanedFlags)
-                                if self.dealTrieSearchResult(type: type, trieSearchResult: appKeyBinding) {
-                                    return nil
-                                }
-                            }
-                        case .globallyEffective:
+                    case .disable:
+                        break
+                    case .whiteListEffective:
+                        if inWindowLevelConfig {
                             let appKeyBinding = Config.match(trieMap: appLevelConfig.trieMap, keyCodes: getKeyCodeCache(type: type, keyCode: cgKeyCode), flags: cleanedFlags)
-                            if self.dealTrieSearchResult(type: type, trieSearchResult: appKeyBinding) {
+                            if try self.dealTrieSearchResult(type: type, trieSearchResult: appKeyBinding) {
                                 return nil
                             }
+                        }
+                    case .globallyEffective:
+                        let appKeyBinding = Config.match(trieMap: appLevelConfig.trieMap, keyCodes: getKeyCodeCache(type: type, keyCode: cgKeyCode), flags: cleanedFlags)
+                        if try self.dealTrieSearchResult(type: type, trieSearchResult: appKeyBinding) {
+                            return nil
+                        }
                     }
                 }
             }
         }
         if notGlobalBlacklist {
             switch config.mode {
-                case .disable:
-                    break
-                case .whiteListEffective:
-                    if inAppLevelConfig {
-                        let rootKeyBinding = Config.match(trieMap: config.trieMap, keyCodes: getKeyCodeCache(type: type, keyCode: cgKeyCode), flags: cleanedFlags)
-                        if self.dealTrieSearchResult(type: type, trieSearchResult: rootKeyBinding) {
-                            return nil
-                        }
-                    }
-                case .globallyEffective:
+            case .disable:
+                break
+            case .whiteListEffective:
+                if inAppLevelConfig {
                     let rootKeyBinding = Config.match(trieMap: config.trieMap, keyCodes: getKeyCodeCache(type: type, keyCode: cgKeyCode), flags: cleanedFlags)
-                    if self.dealTrieSearchResult(type: type, trieSearchResult: rootKeyBinding) {
+                    if try self.dealTrieSearchResult(type: type, trieSearchResult: rootKeyBinding) {
                         return nil
                     }
+                }
+            case .globallyEffective:
+                let rootKeyBinding = Config.match(trieMap: config.trieMap, keyCodes: getKeyCodeCache(type: type, keyCode: cgKeyCode), flags: cleanedFlags)
+                if try self.dealTrieSearchResult(type: type, trieSearchResult: rootKeyBinding) {
+                    return nil
+                }
             }
         }
         return Unmanaged.passUnretained(event)
@@ -271,70 +270,69 @@ class AppBusinessManager {
         }
     }
     
-    func dealTrieSearchResult(type: CGEventType , trieSearchResult: KeyMapper.Trie.TrieSearchResult?) -> Bool {
-        if type == .keyDown {
-            if trieSearchResult == nil {
-                return false
-            }
-            switch trieSearchResult {
-                case .none,.noMatch:
-                    break
-                case .matchedNoValue:
-                    self.lastGPressTime = Date().timeIntervalSince1970
-                    self.needClearKeyCodeCache = false
-                    return true
-                case .matchedWithValue(let binding):
-                    let lastGPressTime = self.lastGPressTime
-                    let keyCodeCacheCount = self.keyCodeCache.count
-                    if keyCodeCacheCount == 1 {
-                        if self.doActionkeyDown(keyBinding: binding) {
-                            return true
-                        }
-                    } else {
-                        let now = Date().timeIntervalSince1970
-                        if now - lastGPressTime < self.gPressInterval {
-                            if self.doActionkeyDown(keyBinding: binding) {
+    func dealTrieSearchResult(type: CGEventType , trieSearchResult: KeyMapper.Trie.TrieSearchResult?) throws -> Bool {
+        do {
+            if type == .keyDown {
+                if trieSearchResult == nil {
+                    return false
+                }
+                switch trieSearchResult {
+                    case .none,.noMatch:
+                        break
+                    case .matchedNoValue:
+                        self.lastGPressTime = Date().timeIntervalSince1970
+                        self.needClearKeyCodeCache = false
+                        return true
+                    case .matchedWithValue(let binding):
+                        let lastGPressTime = self.lastGPressTime
+                        let keyCodeCacheCount = self.keyCodeCache.count
+                        if keyCodeCacheCount == 1 {
+                            if try self.doActionkeyDown(keyBinding: binding) {
                                 return true
                             }
+                        } else {
+                            let now = Date().timeIntervalSince1970
+                            if now - lastGPressTime < self.gPressInterval {
+                                if try self.doActionkeyDown(keyBinding: binding) {
+                                    return true
+                                }
+                            }
                         }
-                    }
+                }
             }
+            else if type == .keyUp {
+                if trieSearchResult == nil {
+                    return false
+                }
+                switch trieSearchResult {
+                    case .none,.noMatch,.matchedNoValue: break
+                    case .matchedWithValue(let binding):
+                        if self.doActionkeyUp(keyBinding: binding) {
+                            return true
+                        }
+                }
+            }
+        } catch AppError.notMeetPremiseCondition(_) {
+            return false
         }
-        else if type == .keyUp {
-            if trieSearchResult == nil {
-                return false
-            }
-            switch trieSearchResult {
-                case .none,.noMatch,.matchedNoValue: break
-                case .matchedWithValue(let binding):
-                    if self.doActionkeyUp(keyBinding: binding) {
-                        return true
-                    }
-            }
-        }
+
         return false
     }
 
-    func doActionkeyDown(keyBinding :KeyMapper.KeyBinding) -> Bool{
-        var success = false
+    func doActionkeyDown(keyBinding :KeyMapper.KeyBinding) throws -> Bool{
         //Simulate the key
         for keyCodeItem in keyBinding.action.keyCode {
-            let kDown = CGEvent(keyboardEventSource: self.eventSource, virtualKey: keyCodeItem, keyDown: true)!
+            let kDown = CGEvent(keyboardEventSource: Constant.source, virtualKey: keyCodeItem, keyDown: true)!
             kDown.flags = keyBinding.action.modifiers
             kDown.post(tap: .cghidEventTap)
             
-            addInKeyDownSet(keyCodeItem, keyBinding.action.modifiers)
-            success = true
+            keyDownSet.insert(KeyMapper.KeyCombo(keyCode: [keyCodeItem], modifiers: keyBinding.action.modifiers))
         }
         
-        if mouseActionExecutor.execute(mouseAction: keyBinding.action.mouse) {
-            success = true
-        }
+        _ = mouseActionExecutor.execute(mouseAction: keyBinding.action.mouse)
         
-        if commandExecutor.execute(command: keyBinding.action.command) {
-            success = true
-        }
-        return success
+        _ = try commandExecutor.execute(command: keyBinding.action.command)
+        return true
     }
     
     func doActionkeyUp(keyBinding :KeyMapper.KeyBinding) -> Bool{
@@ -343,7 +341,7 @@ class AppBusinessManager {
         for keyCodeItem in keyBinding.action.keyCode {
             let keyCombo = KeyMapper.KeyCombo(keyCode: [keyCodeItem], modifiers: keyBinding.action.modifiers)
             if keyDownSet.contains(keyCombo) {
-                let kUp = CGEvent(keyboardEventSource: self.eventSource, virtualKey: keyCodeItem, keyDown: false)!
+                let kUp = CGEvent(keyboardEventSource: Constant.source, virtualKey: keyCodeItem, keyDown: false)!
                 kUp.flags = keyBinding.action.modifiers
                 kUp.post(tap: .cghidEventTap)
                 
@@ -400,13 +398,6 @@ class AppBusinessManager {
     func clearKeyCodeCache(){
         self.keyCodeCache.removeAll(keepingCapacity: false)
         self.lastGPressTime = 0
-    }
-    
-    func addInKeyDownSet(_ keyCode: CGKeyCode, _ modifiers: CGEventFlags){
-        if keyDownSet.count > 1000 {
-            return
-        }
-        keyDownSet.insert(KeyMapper.KeyCombo(keyCode: [keyCode], modifiers: modifiers))
     }
         
     func applicationWillTerminate(_ notification: Notification) {
