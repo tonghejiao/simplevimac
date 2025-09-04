@@ -31,6 +31,9 @@ simplevimac是一个让你尽量用键盘操作电脑的软件.
 
 ### 模拟鼠标点击
 
+![9月4日](https://github.com/user-attachments/assets/2e4c35ad-6fc9-4426-ace5-4cd56cd196d5)
+
+
 ## 如何设置
 
 设置界面如下图:
