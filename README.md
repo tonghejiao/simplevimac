@@ -51,4 +51,5 @@ simplevimac是一个让你尽量用键盘操作电脑的软件.
 
 ## 联系本人
 微信号: smallconantong
+
 qq 群: 1020535266
