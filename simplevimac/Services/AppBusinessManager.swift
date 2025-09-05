@@ -54,7 +54,14 @@ class AppBusinessManager {
     func toggleGlobalSwitch() {
         if let appConfig = self.config {
             appConfig.iSwitch = !appConfig.iSwitch
+            StatusItemController.shared.updateGlobalSwitchState(isOn: appConfig.iSwitch)
             appConfig.saveISwitchToFile()
+        }
+    }
+    
+    func setGlobalSwitch(_ iSwitch: Bool){
+        if let appConfig = self.config {
+            appConfig.iSwitch = iSwitch
             StatusItemController.shared.updateGlobalSwitchState(isOn: appConfig.iSwitch)
         }
     }

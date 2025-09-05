@@ -8,8 +8,6 @@
 import SwiftUI
 
 struct RepresentedKeyCaptureView: NSViewRepresentable {
-    typealias NSViewType = NSView
-
     @Binding var keyCodes: [CGKeyCode]
     @Binding var modifierFlags: CGEventFlags
     @Binding var clearTrigger: Bool
@@ -31,6 +29,12 @@ struct RepresentedKeyCaptureView: NSViewRepresentable {
                 self.modifierFlags = flags
                 onCommit?(codes, flags)
             }
+        }
+        view.onFocus = {
+            AppBusinessManager.shared.setGlobalSwitch(false)
+        }
+        view.unFocus = {
+            AppBusinessManager.shared.setGlobalSwitch(true)
         }
         return view
     }

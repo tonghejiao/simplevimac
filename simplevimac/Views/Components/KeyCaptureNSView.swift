@@ -9,6 +9,8 @@ import AppKit
 
 class KeyCaptureNSView: NSView {
     var onKeyPress: (([CGKeyCode], CGEventFlags) -> Void)?
+    var onFocus: (() -> Void)?
+    var unFocus: (() -> Void)?
     var accumulateKeyCodes = false
     var needModifierFlags = true
     var allowedKeyCodes: Set<CGKeyCode>? = nil
@@ -53,11 +55,13 @@ class KeyCaptureNSView: NSView {
     }
 
     override func becomeFirstResponder() -> Bool {
+        onFocus?()
         self.layer?.borderColor = NSColor.controlAccentColor.cgColor
         return true
     }
 
     override func resignFirstResponder() -> Bool {
+        unFocus?()
         self.layer?.borderColor = NSColor.separatorColor.cgColor
         return true
     }
