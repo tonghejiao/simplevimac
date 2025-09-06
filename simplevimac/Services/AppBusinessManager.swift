@@ -142,7 +142,6 @@ class AppBusinessManager {
         
         let cgKeyCode = CGKeyCode(keyCode)
         let cleanedFlags = flags.intersection(Constant.allowModifiers)
-        print(KeySpecBase.describeModifiers(cleanedFlags))
         
         if self.mode == .hints && type == .keyDown {
             if cgKeyCode == 51 { // backspace key
