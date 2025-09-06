@@ -22,7 +22,7 @@ public struct Role {
 }
 
 public struct Constant {
-    static let allowModifiers: CGEventFlags = [.maskCommand, .maskControl, .maskAlternate, .maskShift]
+    static let allowModifiers: CGEventFlags = [.maskCommand, .maskControl, .maskAlternate, .maskShift, .maskSecondaryFn]
     
     static let editableElementRoles: Set<String> = [Role.textField, Role.textArea, Role.searchField, Role.editableText, Role.comboBox]
 

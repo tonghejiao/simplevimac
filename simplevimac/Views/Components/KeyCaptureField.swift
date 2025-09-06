@@ -31,6 +31,8 @@ struct KeyCaptureField: View {
         (.maskAlternate, "⌥"),
         (.maskCommand, "⌘"),
         (.maskShift, "⇧"),
+        (.maskSecondaryFn, "fn"),
+        (.maskAlphaShift, "⇪")
     ]
     
     private static let keyCodeSet = Set(keyCodeMap.keys)

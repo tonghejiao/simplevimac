@@ -71,6 +71,8 @@ class KeySpecBase: Codable {
             case "control", "ctrl": flags.insert(.maskControl)
             case "shift": flags.insert(.maskShift)
             case "option", "alt", "opt": flags.insert(.maskAlternate)
+            case "fn": flags.insert(.maskSecondaryFn)
+            case "caps": flags.insert(.maskAlphaShift)
             default: break
             }
         }
@@ -83,6 +85,8 @@ class KeySpecBase: Codable {
         if flags.contains(.maskControl) { names.append("ctrl") }
         if flags.contains(.maskAlternate) { names.append("opt") }
         if flags.contains(.maskShift) { names.append("shift") }
+        if flags.contains(.maskSecondaryFn) { names.append("fn") }
+        if flags.contains(.maskAlphaShift) { names.append("caps") }
         return names
     }
     

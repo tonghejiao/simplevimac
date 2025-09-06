@@ -22,6 +22,8 @@ class AppBusinessManager {
     var needClearKeyCodeCache = true
     
     var keyDownSet: Set<KeyMapper.KeyCombo> = []
+    
+    var originalGlobalSwitch: Bool?
 
     let accessibilityElementManager = AccessibilityElementManager.shared
     let commandExecutor = CommandExecutor.shared
@@ -63,6 +65,20 @@ class AppBusinessManager {
         if let appConfig = self.config {
             appConfig.iSwitch = iSwitch
             StatusItemController.shared.updateGlobalSwitchState(isOn: appConfig.iSwitch)
+        }
+    }
+    
+    func tempSetGlobalSwitch(_ iSwitch: Bool){
+        if let appConfig = self.config {
+            self.originalGlobalSwitch = appConfig.iSwitch
+            appConfig.iSwitch = iSwitch
+            StatusItemController.shared.updateGlobalSwitchState(isOn: appConfig.iSwitch)
+        }
+    }
+    
+    func resumeGlobalSwitch(){
+        if let originalGlobalSwitch = self.originalGlobalSwitch {
+            setGlobalSwitch(originalGlobalSwitch)
         }
     }
 
@@ -126,6 +142,7 @@ class AppBusinessManager {
         
         let cgKeyCode = CGKeyCode(keyCode)
         let cleanedFlags = flags.intersection(Constant.allowModifiers)
+        print(KeySpecBase.describeModifiers(cleanedFlags))
         
         if self.mode == .hints && type == .keyDown {
             if cgKeyCode == 51 { // backspace key

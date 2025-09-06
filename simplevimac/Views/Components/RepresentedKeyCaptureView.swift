@@ -31,10 +31,10 @@ struct RepresentedKeyCaptureView: NSViewRepresentable {
             }
         }
         view.onFocus = {
-            AppBusinessManager.shared.setGlobalSwitch(false)
+            AppBusinessManager.shared.tempSetGlobalSwitch(false)
         }
         view.unFocus = {
-            AppBusinessManager.shared.setGlobalSwitch(true)
+            AppBusinessManager.shared.resumeGlobalSwitch()
         }
         return view
     }
