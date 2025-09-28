@@ -96,6 +96,10 @@ class AccessibilityElementManager {
         if let app = NSRunningApplication(processIdentifier: pid) {
             bundleId = app.bundleIdentifier
         }
+                
+        if bundleId == nil {
+            return ""
+        }
 
         return bundleId
     }

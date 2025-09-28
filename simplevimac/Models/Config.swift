@@ -340,9 +340,7 @@ class Config: ObservableObject, Codable {
                 appCfg.window.urlRadixTrie.insert(urlCfg.key, value: urlCfg)
             }
             // 新增 appMap 初始化逻辑
-            if !appCfg.bundleId.isEmpty {
-                config.appMap[appCfg.bundleId] = appCfg
-            }
+            config.appMap[appCfg.bundleId] = appCfg
         }
 
         return config

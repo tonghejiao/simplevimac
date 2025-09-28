@@ -78,7 +78,7 @@ struct ContentView: View {
         .navigationTitle("simplevimac")
     }
 
-    func saveConfigToFile() {
+    func saveConfigToFile(){
         // 校验全局默认配置快捷键不能为空
         let invalidBindings = config.iDefault.filter { $0.trigger.keyCode.isEmpty || ($0.action.keyCode.isEmpty && $0.action.mouse == nil && $0.action.command == nil)}
         if !invalidBindings.isEmpty {
@@ -90,10 +90,10 @@ struct ContentView: View {
         var seenBundleIds: Set<String> = []
         for app in config.app {
             // 校验 bundleId 非空
-            if app.bundleId.trimmingCharacters(in: .whitespaces).isEmpty {
-                showAlert(message: "存在应用配置未填写，保存失败")
-                return
-            }
+//            if app.bundleId.trimmingCharacters(in: .whitespaces).isEmpty {
+//                showAlert(message: "存在应用配置未填写，保存失败")
+//                return
+//            }
             if seenBundleIds.contains(app.bundleId) {
                 let appName = appInfo(for: app.bundleId).name ?? app.bundleId
                 showAlert(message: "存在重复的应用配置：\(appName)")
@@ -158,7 +158,7 @@ struct ContentView: View {
                 }
             }
         }
-        
+
         do {
             try config.saveToFile(false)
             AppBusinessManager.shared.config = try Config.loadConfigFromFile()
